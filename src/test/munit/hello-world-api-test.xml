@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+      xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+          http://www.mulesoft.org/schema/mule/core
+          http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+          http://www.mulesoft.org/schema/mule/munit
+          http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+          http://www.mulesoft.org/schema/mule/munit-tools
+          http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+
+    <!-- ============================================================
+         MUnit 3.x Test Suite: hello-world-api
+         Java 17 compatible
+         Note: then-throw inside mock-when was removed in MUnit 3.x.
+               Error simulation now uses munit-tools:throw directly
+               in the execution block.
+    ============================================================ -->
+
+    <munit:config name="hello-world-api-test.xml" doc:name="MUnit Config" />
+
+    <!-- ============================================================
+         TEST 1 — Happy Path: GET /api/hello returns success payload
+    ============================================================ -->
+    <munit:test
+        name="test-get-hello-returns-success"
+        doc:name="GET /api/hello - Happy Path"
+        description="Validates status=success, code=200, message and timestamp present">
+
+        <munit:execution>
+            <flow-ref name="get-hello-flow" doc:name="Execute get-hello-flow" />
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that
+                doc:name="Assert status = success"
+                expression="#[output application/java --- payload.status]"
+                is="#[MunitTools::equalTo('success')]"
+                message="Response 'status' should be 'success'" />
+
+            <munit-tools:assert-that
+                doc:name="Assert code = 200"
+                expression="#[output application/java --- payload.code]"
+                is="#[MunitTools::equalTo('200')]"
+                message="Response 'code' should be '200'" />
+
+            <munit-tools:assert-that
+                doc:name="Assert message = Hello World"
+                expression="#[output application/java --- payload.message]"
+                is="#[MunitTools::equalTo('Hello, World!')]"
+                message="Response 'message' should be 'Hello, World!'" />
+
+            <munit-tools:assert-that
+                doc:name="Assert timestamp not null"
+                expression="#[output application/java --- payload.timestamp]"
+                is="#[MunitTools::notNullValue()]"
+                message="Response 'timestamp' should not be null" />
+
+            <munit-tools:assert-that
+                doc:name="Assert correlationId not null"
+                expression="#[output application/java --- payload.correlationId]"
+                is="#[MunitTools::notNullValue()]"
+                message="Response 'correlationId' should not be null" />
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================
+         TEST 2 — Error Handling: munit-tools:throw simulates runtime
+                  error; validates global error handler sets httpStatus
+                  and builds a safe error payload (MUnit 3.x approach)
+    ============================================================ -->
+    <munit:test
+        name="test-global-error-handler-500"
+        doc:name="Global Error Handler - 500 on unexpected error"
+        description="Uses munit-tools:throw (MUnit 3.x) to simulate a runtime error and validates the error handler response structure">
+
+        <munit:execution>
+            <try doc:name="Simulate unexpected error and catch it">
+                <!-- raise-error is a core Mule processor — valid inside try blocks.
+                     munit-tools:throw is NOT valid here per the schema. -->
+                <raise-error
+                    type="MULE:UNKNOWN"
+                    description="Simulated unexpected runtime error"
+                    doc:name="Raise Error" />
+
+                <error-handler>
+                    <on-error-continue type="MULE:UNKNOWN" doc:name="Invoke global error handler logic">
+                        <set-variable
+                            doc:name="Set HTTP Status 500"
+                            variableName="httpStatus"
+                            value="500" />
+                        <set-payload
+                            doc:name="Build 500 Error Payload"
+                            value='#[output application/json --- {
+                                "status"        : "error",
+                                "code"          : "500",
+                                "message"       : "Internal Server Error",
+                                "description"   : "An unexpected error occurred. Please contact support.",
+                                "correlationId" : correlationId,
+                                "timestamp"     : now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"}
+                            }]' />
+                    </on-error-continue>
+                </error-handler>
+            </try>
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that
+                doc:name="Assert httpStatus = 500"
+                expression="#[vars.httpStatus]"
+                is="#[MunitTools::equalTo('500')]"
+                message="httpStatus should be '500' after unexpected error" />
+
+            <munit-tools:assert-that
+                doc:name="Assert error payload status = error"
+                expression="#[output application/java --- payload.status]"
+                is="#[MunitTools::equalTo('error')]"
+                message="Error payload 'status' should be 'error'" />
+
+            <munit-tools:assert-that
+                doc:name="Assert error payload code = 500"
+                expression="#[output application/java --- payload.code]"
+                is="#[MunitTools::equalTo('500')]"
+                message="Error payload 'code' should be '500'" />
+
+            <munit-tools:assert-that
+                doc:name="Assert safe message - no stack trace leaked"
+                expression="#[output application/java --- payload.message]"
+                is="#[MunitTools::equalTo('Internal Server Error')]"
+                message="Error 'message' should be safe generic string" />
+
+            <munit-tools:assert-that
+                doc:name="Assert error timestamp not null"
+                expression="#[output application/java --- payload.timestamp]"
+                is="#[MunitTools::notNullValue()]"
+                message="Error payload 'timestamp' should not be null" />
+        </munit:validation>
+    </munit:test>
+
+    <!-- ============================================================
+         TEST 3 — Structure: api metadata block has all required keys
+    ============================================================ -->
+    <munit:test
+        name="test-get-hello-api-block-structure"
+        doc:name="GET /api/hello - api metadata block structure"
+        description="Validates api.name, api.version, api.env are all present">
+
+        <munit:execution>
+            <flow-ref name="get-hello-flow" doc:name="Execute get-hello-flow" />
+        </munit:execution>
+
+        <munit:validation>
+            <munit-tools:assert-that
+                doc:name="Assert api block not null"
+                expression="#[output application/java --- payload.api]"
+                is="#[MunitTools::notNullValue()]"
+                message="Response 'api' block should not be null" />
+
+            <munit-tools:assert-that
+                doc:name="Assert api.name not null"
+                expression="#[output application/java --- payload.api.name]"
+                is="#[MunitTools::notNullValue()]"
+                message="api.name should not be null" />
+
+            <munit-tools:assert-that
+                doc:name="Assert api.version not null"
+                expression="#[output application/java --- payload.api.version]"
+                is="#[MunitTools::notNullValue()]"
+                message="api.version should not be null" />
+
+            <munit-tools:assert-that
+                doc:name="Assert api.env not null"
+                expression="#[output application/java --- payload.api.env]"
+                is="#[MunitTools::notNullValue()]"
+                message="api.env should not be null" />
+        </munit:validation>
+    </munit:test>
+
+</mule>

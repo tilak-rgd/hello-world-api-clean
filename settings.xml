@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Maven Settings — MuleSoft / Anypoint Studio
+    ─────────────────────────────────────────────────────────────────
+    USAGE:
+      Option A (recommended): Copy this file to ~/.m2/settings.xml
+                               so all MuleSoft projects share it.
+
+      Option B (per-build):   Pass it inline on the command line:
+                               mvn clean install -s settings.xml
+
+    WHY THIS IS NEEDED:
+      Maven resolves plugin dependencies before it reads pom.xml
+      <pluginRepositories>. Putting the MuleSoft repos here in a
+      profile ensures they are available at the very start of the
+      build lifecycle, which avoids the "artifact descriptor reader
+      cannot be null" NullPointerException.
+    ─────────────────────────────────────────────────────────────────
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <profiles>
+        <profile>
+            <id>mulesoft</id>
+
+            <repositories>
+                <repository>
+                    <id>anypoint-exchange-v3</id>
+                    <name>Anypoint Exchange V3</name>
+                    <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                </repository>
+                <repository>
+                    <id>mulesoft-releases</id>
+                    <name>MuleSoft Releases</name>
+                    <url>https://repository.mulesoft.org/releases/</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                </repository>
+            </repositories>
+
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>mulesoft-releases</id>
+                    <name>MuleSoft Releases</name>
+                    <url>https://repository.mulesoft.org/releases/</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                </pluginRepository>
+                <pluginRepository>
+                    <id>anypoint-exchange-v3</id>
+                    <name>Anypoint Exchange V3</name>
+                    <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                </pluginRepository>
+            </pluginRepositories>
+
+        </profile>
+    </profiles>
+
+    <!-- Activate the profile for every build automatically -->
+    <activeProfiles>
+        <activeProfile>mulesoft</activeProfile>
+    </activeProfiles>
+
+</settings>

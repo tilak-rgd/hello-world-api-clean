@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+          http://www.mulesoft.org/schema/mule/core
+          http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+          http://www.mulesoft.org/schema/mule/http
+          http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <!-- Configuration Properties (environment-driven) -->
+    <configuration-properties
+        doc:name="Config Properties"
+        file="config.yaml" />
+
+    <!-- HTTP Listener Global Configuration -->
+    <http:listener-config
+        name="HTTP_Listener_Config"
+        doc:name="HTTP Listener Config"
+        doc:id="global-http-listener">
+        <http:listener-connection
+            host="${http.host}"
+            port="${http.port}" />
+    </http:listener-config>
+
+    <!-- ============================================================
+         GLOBAL ERROR HANDLER
+         Handles all unhandled errors across flows
+    ============================================================ -->
+    <error-handler name="Global_Error_Handler" doc:name="Global Error Handler">
+
+        <!-- 400 Bad Request -->
+        <on-error-propagate
+            type="HTTP:BAD_REQUEST, MULE:EXPRESSION"
+            logException="false"
+            doc:name="Handle 400 Bad Request">
+            <logger
+                level="WARN"
+                doc:name="Log 400"
+                message='#["[400 BAD REQUEST] correlationId=" ++ (correlationId default "N/A") ++ " | " ++ error.description]' />
+            <set-variable
+                doc:name="Set HTTP Status 400"
+                variableName="httpStatus"
+                value="400" />
+            <set-payload
+                doc:name="Build 400 Error Response"
+                value='#[output application/json --- {
+                    "status": "error",
+                    "code": "400",
+                    "message": "Bad Request",
+                    "description": error.description,
+                    "correlationId": correlationId,
+                    "timestamp": now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"}
+                }]' />
+        </on-error-propagate>
+
+        <!-- 404 Not Found -->
+        <on-error-propagate
+            type="HTTP:NOT_FOUND"
+            logException="false"
+            doc:name="Handle 404 Not Found">
+            <logger
+                level="WARN"
+                doc:name="Log 404"
+                message='#["[404 NOT FOUND] correlationId=" ++ (correlationId default "N/A") ++ " | " ++ error.description]' />
+            <set-variable
+                doc:name="Set HTTP Status 404"
+                variableName="httpStatus"
+                value="404" />
+            <set-payload
+                doc:name="Build 404 Error Response"
+                value='#[output application/json --- {
+                    "status": "error",
+                    "code": "404",
+                    "message": "Not Found",
+                    "description": "The requested resource does not exist",
+                    "correlationId": correlationId,
+                    "timestamp": now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"}
+                }]' />
+        </on-error-propagate>
+
+        <!-- 405 Method Not Allowed -->
+        <on-error-propagate
+            type="HTTP:METHOD_NOT_ALLOWED"
+            logException="false"
+            doc:name="Handle 405 Method Not Allowed">
+            <logger
+                level="WARN"
+                doc:name="Log 405"
+                message='#["[405 METHOD NOT ALLOWED] correlationId=" ++ (correlationId default "N/A")]' />
+            <set-variable
+                doc:name="Set HTTP Status 405"
+                variableName="httpStatus"
+                value="405" />
+            <set-payload
+                doc:name="Build 405 Error Response"
+                value='#[output application/json --- {
+                    "status": "error",
+                    "code": "405",
+                    "message": "Method Not Allowed",
+                    "description": "HTTP method not supported on this resource",
+                    "correlationId": correlationId,
+                    "timestamp": now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"}
+                }]' />
+        </on-error-propagate>
+
+        <!-- 500 Internal Server Error (catch-all) -->
+        <on-error-propagate
+            type="ANY"
+            logException="true"
+            doc:name="Handle 500 Internal Server Error">
+            <logger
+                level="ERROR"
+                doc:name="Log 500"
+                message='#["[500 INTERNAL SERVER ERROR] correlationId=" ++ (correlationId default "N/A") ++ " | type=" ++ error.errorType.identifier ++ " | " ++ error.description]' />
+            <set-variable
+                doc:name="Set HTTP Status 500"
+                variableName="httpStatus"
+                value="500" />
+            <set-payload
+                doc:name="Build 500 Error Response"
+                value='#[output application/json --- {
+                    "status": "error",
+                    "code": "500",
+                    "message": "Internal Server Error",
+                    "description": "An unexpected error occurred. Please contact support.",
+                    "correlationId": correlationId,
+                    "timestamp": now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"}
+                }]' />
+        </on-error-propagate>
+
+    </error-handler>
+
+</mule>
