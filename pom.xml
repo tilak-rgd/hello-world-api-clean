@@ -9,13 +9,13 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.enterprise</groupId>
-	<artifactId>hello-world-api</artifactId>
+	<artifactId>hello-world-api-clean</artifactId>
 	<version>1.0.0</version>
 
 	<packaging>mule-application</packaging>
 
-	<name>hello-world-api</name>
-	<description>Enterprise Hello World REST API - MuleSoft 4</description>
+	<name>hello-world-api-clean</name>
+	<description>Enterprise Hello World REST API - MuleSoft 4 (clean/positive-case sample)</description>
 
 	<properties>
 
@@ -30,14 +30,25 @@
 		<!-- HTTP Connector -->
 		<http.connector.version>1.10.0</http.connector.version>
 
-		<!-- MUnit -->
-		<munit.version>3.4.0</munit.version>
+		<!-- MUnit — pinned to 3.7.4: 3.4.0's embedded test container hits a
+		     JPMS module conflict (org.apache.maven.resolver.named.locks vs
+		     org.apache.maven.resolver.named both exporting the same package)
+		     under JDK 17, which 3.7.4 resolves. -->
+		<munit.version>3.7.4</munit.version>
+
+		<!-- Standard Maven skip flag: lets a pipeline's Build stage skip
+		     MUnit and defer it to a separate Test stage -->
+		<skipTests>false</skipTests>
 
 		<!-- SONARQUBE_GATE -->
 		<sonar.maven.plugin.version>3.11.0.3922</sonar.maven.plugin.version>
-		<sonar.projectKey>hello-world-api</sonar.projectKey>
+		<sonar.projectKey>hello-world-api-clean</sonar.projectKey>
 		<sonar.sources>src/main</sonar.sources>
 		<sonar.tests>src/test</sonar.tests>
+		<!-- Without this, SonarQube's Java analyzer can't run most bug/vulnerability
+		     rules (they need bytecode, not just source) — they silently no-op instead
+		     of erroring, which is why a file with real issues can still show 0 findings. -->
+		<sonar.java.binaries>target/classes</sonar.java.binaries>
 
 		<!-- EXCHANGE_PUBLISH: override at publish time with
 		     -Danypoint.org.id=<your Anypoint org id> -->
@@ -109,6 +120,7 @@
 					<testOutputDirectory>
 						${project.build.directory}/munit-reports/output
 					</testOutputDirectory>
+
 
 					<!-- ================================================= -->
 					<!-- Coverage (COVERAGE_GATE stage)                    -->

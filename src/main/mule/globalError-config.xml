@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mule xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:http="http://www.mulesoft.org/schema/mule/http"
-      xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="
           http://www.mulesoft.org/schema/mule/core
           http://www.mulesoft.org/schema/mule/core/current/mule.xsd
           http://www.mulesoft.org/schema/mule/http
-          http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-          http://www.mulesoft.org/schema/mule/api-gateway
-          http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+          http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
 
     <!-- Configuration Properties (environment-driven) -->
     <configuration-properties
@@ -26,17 +23,6 @@
             host="${http.host}"
             port="${http.port}" />
     </http:listener-config>
-
-    <!-- API_MANAGER / API_GOVERNANCE stage: self-registers this running
-         instance with the API Manager API instance identified by api.id.
-         WARNING: leave api.id blank only for a plain deploy with no
-         API Manager; a blank/invalid id here will fail app startup once
-         you actually enable this block against a real API Manager id. -->
-    <api-gateway:autodiscovery
-        apiId="${api.id}"
-        ignoreBasePath="true"
-        flowRef="get-hello-flow"
-        doc:name="API Autodiscovery" />
 
     <!-- ============================================================
          GLOBAL ERROR HANDLER

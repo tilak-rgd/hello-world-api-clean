@@ -5,20 +5,13 @@
 
 http:
   host: "0.0.0.0"
-  port: "8081"
+  port: "8082"
   basePath: "/api"
 
 app:
   name: "hello-world-api"
   version: "1.0.0"
   env: "local"
-
-# API_MANAGER / API_GOVERNANCE: the numeric API instance id from Anypoint
-# API Manager. Leave blank for a plain deploy with no autodiscovery;
-# required (override per environment) once you register this API in
-# API Manager and want the deployed app to self-register against it.
-api:
-  id: ""
 
 logging:
   level: "INFO"
