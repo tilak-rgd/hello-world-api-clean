@@ -1,0 +1,38 @@
+#%RAML 1.0
+title: Hello World API
+version: v1
+baseUri: https://{environment}.api.example.com/api
+mediaType: application/json
+
+/hello:
+  get:
+    description: Returns a hello world greeting
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "status": "success",
+                "code": "200",
+                "message": "Hello, World!",
+                "correlationId": "1234-5678",
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "api": {
+                  "name": "hello-world-api",
+                  "version": "1.0.0",
+                  "env": "local"
+                }
+              }
+      500:
+        body:
+          application/json:
+            example: |
+              {
+                "status": "error",
+                "code": "500",
+                "message": "Internal Server Error",
+                "description": "An unexpected error occurred. Please contact support.",
+                "correlationId": "1234-5678",
+                "timestamp": "2026-01-01T00:00:00.000Z"
+              }

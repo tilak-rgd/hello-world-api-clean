@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+          http://www.mulesoft.org/schema/mule/core
+          http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+          http://www.mulesoft.org/schema/mule/http
+          http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+
+    <flow name="get-hello-flow"
+          doc:name="GET /api/hello"
+          doc:id="get-hello-flow">
+
+        <!-- ── INBOUND: HTTP Listener ─────────────────────────── -->
+        <http:listener
+            config-ref="HTTP_Listener_Config"
+            path="/api/hello"
+            allowedMethods="GET"
+            doc:name="GET /api/hello">
+
+            <!-- Success Response -->
+            <http:response
+                statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[output application/java ---
+                    {
+                        "Content-Type"       : "application/json",
+                        "X-Correlation-ID"   : correlationId,
+                        "X-App-Name"         : p('app.name'),
+                        "X-App-Version"      : p('app.version')
+                    }]]]></http:headers>
+            </http:response>
+
+            <!-- Error Response -->
+            <http:error-response
+                statusCode="#[vars.httpStatus default 500]">
+                <http:headers><![CDATA[#[output application/java ---
+                    {
+                        "Content-Type"       : "application/json",
+                        "X-Correlation-ID"   : correlationId
+                    }]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <!-- ── LOG: Incoming Request ──────────────────────────── -->
+        <logger
+            level="INFO"
+            doc:name="Log Incoming Request"
+            message='#["[REQUEST] correlationId=" ++ correlationId
+                ++ " | method=GET"
+                ++ " | path=/api/hello"
+                ++ " | clientIp=" ++ (attributes.remoteAddress default "unknown")
+                ++ " | userAgent=" ++ (attributes.headers."user-agent" default "unknown")]' />
+
+        <!-- ── PROCESS: Build Hello Response ─────────────────── -->
+        <set-payload
+            doc:name="Build Hello Response"
+            value='#[output application/json --- {
+                "status"        : "success",
+                "code"          : "200",
+                "message"       : "Hello, World!",
+                "correlationId" : correlationId,
+                "timestamp"     : now() as String {format: "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ"},
+                "api"           : {
+                    "name"    : p("app.name"),
+                    "version" : p("app.version"),
+                    "env"     : p("app.env")
+                }
+            }]' />
+
+        <!-- ── LOG: Successful Response ──────────────────────── -->
+        <logger
+            level="INFO"
+            doc:name="Log Success Response"
+            message='#["[RESPONSE] correlationId=" ++ correlationId
+                ++ " | status=200"
+                ++ " | path=/api/hello"]' />
+
+        <!-- ── ERROR HANDLER: delegate to global ─────────────── -->
+        <error-handler ref="Global_Error_Handler" />
+
+    </flow>
+
+</mule>
