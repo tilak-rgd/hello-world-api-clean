@@ -210,6 +210,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Intentionally vulnerable — CVE-2021-44228 (Log4Shell), CRITICAL severity.
+		     Added to exercise the SECURITY_SCAN stage's failure path; remove once verified. -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.14.1</version>
+		</dependency>
+
 	</dependencies>
 
 
